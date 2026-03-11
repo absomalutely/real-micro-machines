@@ -1,12 +1,23 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
+
+use rmm_map::{MapCache, OverpassClient};
+use rmm_server::AppState;
+
+fn test_state() -> Arc<AppState> {
+    let overpass = OverpassClient::new();
+    let cache = MapCache::new(std::env::temp_dir().join("rmm-test-cache"));
+    Arc::new(AppState::new(overpass, cache))
+}
 
 async fn spawn_app() -> String {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr: SocketAddr = listener.local_addr().unwrap();
     let base_url = format!("http://{}", addr);
 
+    let state = test_state();
     tokio::spawn(async move {
-        axum::serve(listener, rmm_server::app()).await.unwrap();
+        axum::serve(listener, rmm_server::app(state)).await.unwrap();
     });
 
     base_url

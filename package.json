@@ -19,7 +19,8 @@
     "onlyBuiltDependencies": [
       "@swc/core",
       "esbuild",
-      "lefthook"
+      "lefthook",
+      "msgpackr-extract"
     ]
   },
   "devDependencies": {
