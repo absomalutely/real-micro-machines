@@ -15,11 +15,13 @@ function buildBuildingGeometry(
 ): THREE.BufferGeometry | null {
   if (footprint.length < 3) return null;
 
-  // Create a 2D shape from the footprint (using X, Z as the shape coordinates)
+  // Create a 2D shape from the footprint.
+  // Shape lives in XY plane; rotateX(-PI/2) maps shape-Y → world -Z,
+  // so we negate z here to compensate (double-negation → correct world Z).
   const shape = new THREE.Shape();
-  shape.moveTo(footprint[0].x, footprint[0].z);
+  shape.moveTo(footprint[0].x, -footprint[0].z);
   for (let i = 1; i < footprint.length; i++) {
-    shape.lineTo(footprint[i].x, footprint[i].z);
+    shape.lineTo(footprint[i].x, -footprint[i].z);
   }
   shape.closePath();
 

@@ -139,10 +139,12 @@ function buildParkGround(
 ): THREE.Mesh | null {
   if (polygon.length < 3) return null;
 
+  // Negate z when feeding into Shape's Y to compensate for rotateX(-PI/2)
+  // which maps shape-Y → world -Z (double-negation → correct world Z).
   const shape = new THREE.Shape();
-  shape.moveTo(polygon[0].x, polygon[0].z);
+  shape.moveTo(polygon[0].x, -polygon[0].z);
   for (let i = 1; i < polygon.length; i++) {
-    shape.lineTo(polygon[i].x, polygon[i].z);
+    shape.lineTo(polygon[i].x, -polygon[i].z);
   }
   shape.closePath();
 
