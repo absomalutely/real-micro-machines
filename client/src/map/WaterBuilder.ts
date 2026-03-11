@@ -19,10 +19,12 @@ export function buildWater(
     const projected = proj.projectAll(poly.points);
     if (projected.length < 3) continue;
 
+    // Negate z when feeding into Shape's Y to compensate for rotateX(-PI/2)
+    // which maps shape-Y → world -Z (double-negation → correct world Z).
     const shape = new THREE.Shape();
-    shape.moveTo(projected[0].x, projected[0].z);
+    shape.moveTo(projected[0].x, -projected[0].z);
     for (let i = 1; i < projected.length; i++) {
-      shape.lineTo(projected[i].x, projected[i].z);
+      shape.lineTo(projected[i].x, -projected[i].z);
     }
     shape.closePath();
 
