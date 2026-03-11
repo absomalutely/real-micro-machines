@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/rmm-server"]
+members = ["crates/rmm-server", "crates/rmm-map"]
 
 [workspace.package]
 version = "0.1.0"
