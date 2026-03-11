@@ -130,15 +130,14 @@ pub fn parse_overpass_json(json: &Value, bbox: BBox) -> MapData {
                     points,
                 });
             }
-        } else if get_tag(element, "landuse") == Some("forest") {
-            if points.len() >= 3 {
+        } else if get_tag(element, "landuse") == Some("forest")
+            && points.len() >= 3 {
                 forests.push(Polygon {
                     id,
                     polygon_type: "forest".to_string(),
                     points,
                 });
             }
-        }
     }
 
     debug!(
