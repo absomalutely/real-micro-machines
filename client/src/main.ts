@@ -3,12 +3,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { loadMap, buildScene } from './map';
 import type { BBox } from './map';
 
-// Default bbox: central London (near Trafalgar Square area)
+// Default bbox: ~1km box around target location
 const DEFAULT_BBOX: BBox = {
-  south: 51.505,
-  west: -0.130,
-  north: 51.515,
-  east: -0.115,
+  south: 50.966,
+  west: 0.243,
+  north: 50.978,
+  east: 0.263,
 };
 
 const app = document.getElementById('app')!;
