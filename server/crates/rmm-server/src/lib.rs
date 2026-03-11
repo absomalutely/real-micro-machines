@@ -86,7 +86,7 @@ async fn get_map(
     // Check cache
     if let Some(cached_data) = state.cache.get(&bbox) {
         info!("Serving cached map data for bbox {}", bbox.to_overpass_string());
-        return match rmp_serde::to_vec(&cached_data) {
+        return match rmp_serde::to_vec_named(&cached_data) {
             Ok(bytes) => (
                 StatusCode::OK,
                 [(header::CONTENT_TYPE, "application/x-msgpack")],
@@ -133,7 +133,7 @@ async fn get_map(
     }
 
     // Serialize to MessagePack
-    match rmp_serde::to_vec(&map_data) {
+    match rmp_serde::to_vec_named(&map_data) {
         Ok(bytes) => {
             info!(
                 "Serving {} bytes of map data ({} roads, {} buildings)",
