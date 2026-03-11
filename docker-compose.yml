@@ -1,0 +1,34 @@
+services:
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app/client
+      - ./package.json:/app/package.json
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - client_node_modules:/app/node_modules
+      - client_pkg_node_modules:/app/client/node_modules
+    environment:
+      - NODE_ENV=development
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/app
+      - server_target:/app/target
+    environment:
+      - RMM_PORT=3001
+      - RUST_LOG=info
+
+volumes:
+  client_node_modules:
+  client_pkg_node_modules:
+  server_target:

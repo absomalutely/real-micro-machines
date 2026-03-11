@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    lint:
+      run: pnpm lint
+    test-client:
+      run: pnpm test
+    test-server:
+      root: "server/"
+      run: $HOME/.cargo/bin/cargo test
