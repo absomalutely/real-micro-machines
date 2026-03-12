@@ -49,12 +49,27 @@ export class Car {
     this.syncVisual(1);
   }
 
-  fixedUpdate(input: InputState): void {
+  fixedUpdate(input: InputState, world: PhysicsWorld): void {
     // Store previous state for interpolation
     const pos = this.carBody.getPosition();
     this.prevPosition.set(pos.x, pos.y, pos.z);
     const rot = this.carBody.getRotation();
     this.prevQuaternion.set(rot.x, rot.y, rot.z, rot.w);
+
+    // Surface detection
+    const surface = this.carBody.detectSurface(world);
+    this.carBody.applySurfaceEffects(surface);
+
+    if (surface === 'road') {
+      this.lastRoadPosition.set(pos.x, pos.y, pos.z);
+    } else if (surface === 'water') {
+      // Respawn at last known road position
+      this.carBody.teleport(
+        { x: this.lastRoadPosition.x, y: this.lastRoadPosition.y, z: this.lastRoadPosition.z },
+        this.carBody.getHeading(),
+      );
+      return;
+    }
 
     // Apply physics
     this.carBody.applyInput(input);

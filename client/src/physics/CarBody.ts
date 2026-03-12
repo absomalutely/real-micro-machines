@@ -1,6 +1,9 @@
 import type { InputState } from '../core/Input';
 import type { CarConfig } from '../vehicles/CarConfig';
 import { RAPIER, type PhysicsWorld } from './PhysicsWorld';
+import type { SurfaceType } from './surfaces';
+import { SURFACE_PROPERTIES } from './surfaces';
+import { getSurfaceForCollider } from './TrackColliders';
 
 // Car cuboid half-extents: 4m long, 1.5m tall, 2m wide → half = (1, 0.75, 2)
 const HALF_WIDTH = 1;
@@ -95,6 +98,24 @@ export class CarBody {
   getRotation(): { x: number; y: number; z: number; w: number } {
     const r = this.body.rotation();
     return { x: r.x, y: r.y, z: r.z, w: r.w };
+  }
+
+  detectSurface(world: PhysicsWorld): SurfaceType {
+    const pos = this.body.translation();
+    const origin = { x: pos.x, y: pos.y, z: pos.z };
+    const direction = { x: 0, y: -1, z: 0 };
+    const collider = world.castRay(origin, direction, 5.0);
+    if (collider) {
+      return getSurfaceForCollider(collider);
+    }
+    return 'grass';
+  }
+
+  applySurfaceEffects(surface: SurfaceType): void {
+    const props = SURFACE_PROPERTIES[surface];
+    // Adjust damping based on surface
+    const baseDamping = this.config.linearDamping;
+    this.body.setLinearDamping(baseDamping * props.dampingMultiplier);
   }
 
   teleport(position: { x: number; y: number; z: number }, heading: number): void {
