@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { loadMap, buildScene } from '../map';
 import type { BBox } from '../map';
+import { Camera } from './Camera';
 import { Renderer } from './Renderer';
 
 const DEFAULT_BBOX: BBox = {
@@ -13,7 +14,7 @@ const DEFAULT_BBOX: BBox = {
 export class Game {
   private renderer!: Renderer;
   private scene!: THREE.Scene;
-  private camera!: THREE.PerspectiveCamera;
+  private cam!: Camera;
   private running = false;
 
   async init(): Promise<void> {
@@ -28,20 +29,12 @@ export class Game {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x87ceeb);
 
-    // Camera (temporary orbit-style, replaced by Camera class in step 2)
-    this.camera = new THREE.PerspectiveCamera(
-      60,
-      window.innerWidth / window.innerHeight,
-      1,
-      5000,
-    );
-    this.camera.position.set(0, 400, 300);
-    this.camera.lookAt(0, 0, 0);
+    // Camera
+    this.cam = new Camera(window.innerWidth / window.innerHeight);
 
     // Handle resize for camera aspect
     window.addEventListener('resize', () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
+      this.cam.setAspect(window.innerWidth / window.innerHeight);
     });
 
     // Lighting
@@ -80,7 +73,7 @@ export class Game {
   private loop = (): void => {
     if (!this.running) return;
     requestAnimationFrame(this.loop);
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.cam.camera);
   };
 
   private setupLighting(): void {
