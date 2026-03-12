@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { loadMap, buildScene } from '../map';
 import type { BBox } from '../map';
 import { Camera } from './Camera';
+import { Clock, FIXED_DT } from './Clock';
+import { Input } from './Input';
 import { Renderer } from './Renderer';
 
 const DEFAULT_BBOX: BBox = {
@@ -15,6 +17,8 @@ export class Game {
   private renderer!: Renderer;
   private scene!: THREE.Scene;
   private cam!: Camera;
+  private input!: Input;
+  private clock!: Clock;
   private running = false;
 
   async init(): Promise<void> {
@@ -22,8 +26,10 @@ export class Game {
     const loadingEl = document.getElementById('loading');
     const infoEl = document.getElementById('info');
 
-    // Renderer
+    // Core systems
     this.renderer = new Renderer(app);
+    this.input = new Input();
+    this.clock = new Clock();
 
     // Scene
     this.scene = new THREE.Scene();
@@ -32,7 +38,6 @@ export class Game {
     // Camera
     this.cam = new Camera(window.innerWidth / window.innerHeight);
 
-    // Handle resize for camera aspect
     window.addEventListener('resize', () => {
       this.cam.setAspect(window.innerWidth / window.innerHeight);
     });
@@ -67,14 +72,28 @@ export class Game {
   start(): void {
     if (this.running) return;
     this.running = true;
-    this.loop();
+    requestAnimationFrame(this.loop);
   }
 
-  private loop = (): void => {
+  private loop = (timestamp: number): void => {
     if (!this.running) return;
     requestAnimationFrame(this.loop);
+
+    const { steps } = this.clock.tick(timestamp);
+
+    // Fixed-timestep updates
+    for (let i = 0; i < steps; i++) {
+      this.fixedUpdate(FIXED_DT);
+    }
+
+    // Render
     this.renderer.render(this.scene, this.cam.camera);
   };
+
+  private fixedUpdate(_dt: number): void {
+    // Poll input (will be used by car physics in later steps)
+    this.input.getState();
+  }
 
   private setupLighting(): void {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
