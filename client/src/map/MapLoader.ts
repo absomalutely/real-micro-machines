@@ -5,7 +5,7 @@ import { buildNature } from './NatureBuilder';
 import { Projection } from './Projection';
 import { buildRoads } from './RoadBuilder';
 import { buildTerrain } from './TerrainBuilder';
-import type { BBox, MapData } from './types';
+import type { BBox, MapData, TrackData } from './types';
 import { buildWater } from './WaterBuilder';
 
 /**
@@ -27,6 +27,31 @@ export async function loadMap(bbox: BBox): Promise<MapData> {
 
   const buffer = await response.arrayBuffer();
   const data = unpack(new Uint8Array(buffer)) as MapData;
+  return data;
+}
+
+/**
+ * Fetch track data from the server's /api/track endpoint.
+ * Returns parsed TrackData decoded from MessagePack, or null if no track found.
+ */
+export async function loadTrack(bbox: BBox): Promise<TrackData | null> {
+  const url = `/api/track?south=${bbox.south}&west=${bbox.west}&north=${bbox.north}&east=${bbox.east}`;
+
+  const response = await fetch(url);
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ error: 'Unknown error' }));
+    throw new Error(
+      `Failed to load track: ${response.status} - ${error.error || 'Unknown error'}`
+    );
+  }
+
+  const buffer = await response.arrayBuffer();
+  const data = unpack(new Uint8Array(buffer)) as TrackData;
   return data;
 }
 
