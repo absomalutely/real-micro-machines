@@ -1,8 +1,11 @@
 import * as THREE from 'three';
-import { loadMap, buildScene } from '../map';
-import type { BBox } from '../map';
+import { loadMap, loadTrack, buildScene, Projection } from '../map';
+import type { BBox, TrackData } from '../map';
+import { PhysicsWorld } from '../physics/PhysicsWorld';
+import { buildTrackColliders } from '../physics/TrackColliders';
+import { Car } from '../vehicles/Car';
 import { Camera } from './Camera';
-import { Clock, FIXED_DT } from './Clock';
+import { Clock } from './Clock';
 import { Input } from './Input';
 import { Renderer } from './Renderer';
 
@@ -19,6 +22,8 @@ export class Game {
   private cam!: Camera;
   private input!: Input;
   private clock!: Clock;
+  private physics!: PhysicsWorld;
+  private car: Car | null = null;
   private running = false;
 
   async init(): Promise<void> {
@@ -45,7 +50,12 @@ export class Game {
     // Lighting
     this.setupLighting();
 
-    // Load map
+    // Physics
+    if (loadingEl) loadingEl.textContent = 'Initializing physics...';
+    this.physics = new PhysicsWorld();
+    await this.physics.init();
+
+    // Load map + track
     try {
       if (loadingEl) loadingEl.textContent = 'Fetching map data...';
       const mapData = await loadMap(DEFAULT_BBOX);
@@ -57,9 +67,36 @@ export class Game {
       if (infoEl) {
         infoEl.textContent = `${mapData.roads.length} roads, ${mapData.buildings.length} buildings, ${mapData.parks.length} parks, ${mapData.water.length} water`;
       }
-      if (loadingEl) loadingEl.style.display = 'none';
 
       console.log(`Map loaded: ${mapData.roads.length} roads, ${mapData.buildings.length} buildings`);
+
+      // Build physics colliders from map geometry
+      if (loadingEl) loadingEl.textContent = 'Building physics...';
+      const projection = new Projection(mapData.bbox);
+      buildTrackColliders(mapData, projection, this.physics);
+
+      // Fetch track data for start line position
+      if (loadingEl) loadingEl.textContent = 'Loading track...';
+      let trackData: TrackData | null = null;
+      try {
+        trackData = await loadTrack(DEFAULT_BBOX);
+      } catch (e) {
+        console.warn('Track generation failed, spawning at origin:', e);
+      }
+
+      // Spawn car
+      const spawnPos = this.getSpawnPosition(trackData, projection);
+      const spawnHeading = this.getSpawnHeading(trackData);
+
+      this.car = new Car(this.physics, spawnPos, spawnHeading);
+      this.scene.add(this.car.mesh);
+
+      // Snap camera to car
+      this.cam.snapTo(this.car.getPosition(), this.car.getHeading());
+
+      if (loadingEl) loadingEl.style.display = 'none';
+
+      console.log(`Car spawned at (${spawnPos.x.toFixed(1)}, ${spawnPos.y.toFixed(1)}, ${spawnPos.z.toFixed(1)})`);
     } catch (error) {
       console.error('Failed to load map:', error);
       if (loadingEl) {
@@ -79,20 +116,47 @@ export class Game {
     if (!this.running) return;
     requestAnimationFrame(this.loop);
 
-    const { steps } = this.clock.tick(timestamp);
+    const { steps, alpha } = this.clock.tick(timestamp);
 
     // Fixed-timestep updates
     for (let i = 0; i < steps; i++) {
-      this.fixedUpdate(FIXED_DT);
+      this.fixedUpdate();
     }
 
-    // Render
+    // Interpolate and render
+    if (this.car) {
+      this.car.syncVisual(alpha);
+      this.cam.follow(this.car.getPosition(), this.car.getHeading());
+    }
+
     this.renderer.render(this.scene, this.cam.camera);
   };
 
-  private fixedUpdate(_dt: number): void {
-    // Poll input (will be used by car physics in later steps)
-    this.input.getState();
+  private fixedUpdate(): void {
+    const input = this.input.getState();
+
+    if (this.car) {
+      this.car.fixedUpdate(input, this.physics);
+    }
+
+    this.physics.step();
+  }
+
+  private getSpawnPosition(trackData: TrackData | null, projection: Projection): { x: number; y: number; z: number } {
+    if (trackData?.start_line) {
+      const [lat, lon] = trackData.start_line.position;
+      const projected = projection.project({ lat, lon });
+      return { x: projected.x, y: 0, z: projected.z };
+    }
+    // Fallback: center of map
+    return { x: 0, y: 0, z: 0 };
+  }
+
+  private getSpawnHeading(trackData: TrackData | null): number {
+    if (trackData?.start_line) {
+      return trackData.start_line.heading;
+    }
+    return 0;
   }
 
   private setupLighting(): void {

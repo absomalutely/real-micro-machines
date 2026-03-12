@@ -46,3 +46,21 @@ export interface MapData {
   forests: MapPolygon[];
   bbox: BBox;
 }
+
+/** A checkpoint or start line on a generated track. */
+export interface Checkpoint {
+  position: [number, number]; // [lat, lon]
+  heading: number;
+  width: number;
+  index: number;
+}
+
+/** Generated track data from the server. */
+export interface TrackData {
+  mode: string;
+  checkpoints: Checkpoint[];
+  start_line: Checkpoint;
+  direction: string;
+  route_geometry: [number, number][];
+  total_length_m: number;
+}
